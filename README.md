@@ -39,44 +39,6 @@ Welcome to the Factory Task Scheduler, a tool designed to efficiently manage and
   - `priority`
 - Quantum: (For Round Robin only) Specify the time quantum.
 
-## Example Input
-
-Enter the number of tasks: 3
-Enter task type for all tasks (real-time/batch/emergency/priority): priority
-
-Enter details for Task 1:
-Arrival Time: 0
-Burst Time: 4
-Priority (1=highest): 1
-
-Enter details for Task 2:
-Arrival Time: 2
-Burst Time: 3
-Priority (1=highest): 2
-
-Enter details for Task 3:
-Arrival Time: 4
-Burst Time: 1
-Priority (1=highest): 3
-
-
-## Example Output
-
-Using Priority Scheduling for all tasks:
-
-Task Details (ID, Type, Arrival, Burst, Priority, Start, Completion, Waiting, Turnaround):
-T1   priority   0   4   1   0   4   0   4
-T2   priority   2   3   2   4   7   2   5
-T3   priority   4   1   3   7   8   3   4
-
-Average Waiting Time: 1.67
-Average Turnaround Time: 4.33
-
-Gantt Chart:
-|  T1  |  T2  |  T3  |
-0      4      7      8
-
-
 ## Scheduling Algorithms
 ### 1. Priority Scheduling
 - Sorts tasks by arrival time and priority.
@@ -91,7 +53,7 @@ Gantt Chart:
 - Uses a user-defined time quantum.
 
 ## Files
-- factory_task_scheduler.c: Main program code.
+- Task scheduler.c: Main program code.
 - README.md: Documentation for the project.
 
 ## Future Enhancements
