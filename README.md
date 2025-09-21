@@ -1,62 +1,96 @@
 # Factory Task Scheduler
 
-Welcome to the Factory Task Scheduler, a tool designed to efficiently manage and optimize task scheduling in factory environments. This program allows you to schedule tasks using various algorithms such as Priority Scheduling, First-Come-First-Served (FCFS), and Round Robin, depending on task types like real-time, batch, emergency, or priority.
+Welcome to the **Factory Task Scheduler**, a Linux-based task scheduling tool designed to efficiently manage and optimize tasks in factory or real-time computing environments. This program allows scheduling using various algorithms such as **Priority Scheduling**, **First-Come-First-Served (FCFS)**, and **Round Robin**, depending on task types like real-time, batch, emergency, or priority.
+
+---
 
 ## Features
-- Priority Scheduling: For emergency and priority tasks, where lower priority values are executed first.
-- FCFS Scheduling: Processes tasks in the order of their arrival for batch tasks.
-- Round Robin Scheduling: Ensures fair time-sharing for real-time tasks with user-defined quantum.
-- Displays Gantt Chart for task execution visualization.
-- Calculates and displays metrics such as:
+- **Priority Scheduling:** For emergency and priority tasks, where lower priority values are executed first.
+- **FCFS Scheduling:** Executes tasks in the order of arrival for batch tasks.
+- **Round Robin Scheduling:** Ensures fair time-sharing for real-time tasks with a user-defined quantum.
+- **Gantt Chart Visualization:** Displays task execution order and timing.
+- **Metrics Calculation:** Computes and displays:
   - Waiting Time
   - Turnaround Time
   - Average Waiting Time
   - Average Turnaround Time
+- **Linux Process Management:** Uses `fork()`, `pipe()`, and `wait()` for process execution and inter-process communication (IPC).
+
+---
 
 ## How It Works
-1. Input Tasks: Enter details like arrival time, burst time, and priority (if applicable) for each task.
-2. Choose Scheduling Algorithm: The program selects the scheduling algorithm based on the task type:
-   - Emergency/Priority: Uses Priority Scheduling.
-   - Batch: Uses FCFS Scheduling.
-   - Real-Time: Uses Round Robin Scheduling.
-3. Execution and Metrics: The program executes the tasks using the chosen algorithm and computes performance metrics.
-4. Visualization: Displays a Gantt chart and task details.
+1. **Input Tasks:** Enter task details such as arrival time, burst time, and priority (if applicable).
+2. **Select Scheduling Algorithm:** The program chooses the scheduling algorithm based on task type:
+   - `emergency` / `priority` → **Priority Scheduling**
+   - `batch` → **FCFS Scheduling**
+   - `real-time` → **Round Robin Scheduling**
+3. **Execute Tasks:** Tasks are executed as Linux processes using `fork()`, and results are communicated via pipes.
+4. **Metrics & Visualization:** The program calculates task metrics and displays a Gantt chart.
+
+---
 
 ## How to Run
-1. Compile the program:
-   gcc factory_task_scheduler.c -o scheduler.
-2. Follow the on-screen instructions to input task details and select scheduling parameters.
+1. **Compile the program:**
+   ```bash
+   gcc factory_task_scheduler.c -o scheduler
+Run the program:
 
-## Input Format
-- Task Details:
-  - Arrival Time
-  - Burst Time
-  - (Optional) Priority for emergency or priority tasks.
-- Task Type: Specify one of the following:
-  - `real-time`
-  - `batch`
-  - `emergency`
-  - `priority`
-- Quantum: (For Round Robin only) Specify the time quantum.
+./scheduler
 
-## Scheduling Algorithms
-### 1. Priority Scheduling
-- Sorts tasks by arrival time and priority.
-- Executes the task with the highest priority first.
 
-### 2. FCFS Scheduling
-- Executes tasks in the order of their arrival.
-- Simple and non-preemptive.
+Follow on-screen instructions to enter task details, task type, and time quantum (for Round Robin).
 
-### 3. Round Robin Scheduling
-- Shares CPU time equally among tasks in a cyclic order.
-- Uses a user-defined time quantum.
+Input Format
 
-## Files
-- Task scheduler.c: Main program code.
-- README.md: Documentation for the project.
+Task Details:
 
-## Future Enhancements
-- Add support for additional scheduling algorithms like Shortest Job First (SJF).
-- Introduce dynamic task types and interactive menus.
-- Extend visualization to include idle times in the Gantt chart.
+Arrival Time (integer)
+
+Burst Time (integer, in seconds)
+
+Priority (integer, optional for emergency/priority tasks)
+
+Task Type: real-time, batch, emergency, or priority
+
+Quantum: Required only for Round Robin scheduling
+
+Scheduling Algorithms
+1. Priority Scheduling
+
+Tasks are sorted by arrival time and priority.
+
+Executes the task with the highest priority (lowest value) first.
+
+2. FCFS Scheduling
+
+Tasks are executed in the order of arrival.
+
+Simple and non-preemptive.
+
+3. Round Robin Scheduling
+
+Tasks share CPU time cyclically.
+
+Uses a user-defined time quantum for execution slices.
+
+Linux Process Integration
+
+Each task is executed as a separate process using fork().
+
+pipe() is used for inter-process communication to notify completion.
+
+wait() ensures the parent process waits for child processes to finish.
+
+Files
+
+factory_task_scheduler.c — Main program code.
+
+README.md — Documentation and usage guide.
+
+Future Enhancements
+
+Add support for additional scheduling algorithms like Shortest Job First (SJF).
+
+Introduce dynamic task types and interactive menus.
+
+Enhance Gantt chart visualization to include idle times.
