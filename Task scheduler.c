@@ -2,31 +2,28 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <unistd.h>   
+#include <sys/wait.h>   
+#include <sys/types.h>
 
 #define MAX 100
 
 typedef struct {
-    int id;                 // Task ID
-    char type[20];          // Task type: real-time, batch, etc.
-    int arrival_time;       // Arrival time
-    int burst_time;         // Burst time
-    int remaining_burst;    // Remaining burst time (for RR)
-    int priority;           // Priority (lower value = higher priority)
-    int start_time;         // Start time (for Gantt chart)
-    int completion_time;    // Completion time
-    int waiting_time;       // Waiting time
-    int turnaround_time;    // Turnaround time
+    int id;                 
+    char type[20];          
+    int arrival_time;       
+    int burst_time;         
+    int remaining_burst;    
+    int priority;           
+    int start_time;         
+    int completion_time;    
+    int waiting_time;       
+    int turnaround_time;    
     int remaining_time;
+    pid_t pid;         
 } Task;
-void display_welcome_message() {
-    printf("\n==============================================\n");
-    printf("        Welcome to Factory Task Scheduler       \n");
-    printf("==============================================\n");
-    printf("Choose the right scheduling algorithm for your tasks\n");
-    printf("and optimize task management effectively!\n");
-    printf("==============================================\n\n");
-}
-// Function prototypes
+
+// Functions
 void priority(Task tasks[], int n);
 void round_robin(Task tasks[], int n, int quantum);
 void fcfs(Task tasks[], int n);
@@ -34,18 +31,47 @@ void calculate_metrics(Task tasks[], int n);
 void display_gantt_chart(Task tasks[], int n);
 void sort_by_arrival_and_priority(Task tasks[], int n);
 void sort_by_arrival(Task tasks[], int n);
-void reset_remaining_burst(Task tasks[], int n);
+
+void run_process(Task *task) {
+    int fd[2];
+    char buffer[50];
+    pipe(fd);
+
+    task->pid = fork();
+    if (task->pid == 0) {
+        close(fd[0]); 
+        sleep(task->burst_time);
+        sprintf(buffer, "Task %d finished (PID %d)\n", task->id, getpid());
+        write(fd[1], buffer, strlen(buffer) + 1);
+        close(fd[1]);
+        exit(0);
+    } else {
+        close(fd[1]);
+        read(fd[0], buffer, sizeof(buffer));
+        printf("%s", buffer); 
+        close(fd[0]);
+        wait(NULL);
+    }
+}
+
+void display_welcome_message() {
+    printf("\n==============================================\n");
+    printf("        Welcome to Linux OS Task Scheduler      \n");
+    printf("==============================================\n");
+    printf("Implements FCFS, Priority, and Round Robin Scheduling\n");
+    printf("using fork(), exec(), wait(), and IPC pipes.\n");
+    printf("==============================================\n\n");
+}
 
 int main() {
-  display_welcome_message();
-    int n, quantum;
+    display_welcome_message();
 
+    int n, quantum;
     printf("Enter the number of tasks: ");
     scanf("%d", &n);
 
     Task tasks[n];
 
-    // Ask for task type once for all tasks
     printf("Enter task type for all tasks (real-time/batch/emergency/priority): ");
     char task_type[20];
     scanf("%s", task_type);
@@ -53,42 +79,40 @@ int main() {
     for (int i = 0; i < n; i++) {
         tasks[i].id = i + 1;
         printf("Enter details for Task %d\n", tasks[i].id);
-        strcpy(tasks[i].type, task_type);  // Set the same task type for all tasks
+        strcpy(tasks[i].type, task_type);  
         printf("Arrival Time: ");
         scanf("%d", &tasks[i].arrival_time);
-        printf("Burst Time: ");
+        printf("Burst Time (in seconds): ");
         scanf("%d", &tasks[i].burst_time);
 
         if (strcmp(task_type, "emergency") == 0 || strcmp(task_type, "priority") == 0) {
             printf("Priority (1=highest): ");
             scanf("%d", &tasks[i].priority);
         } else {
-            tasks[i].priority = 0;  // Default value for non-priority tasks
+            tasks[i].priority = 0;
         }
 
-        tasks[i].remaining_burst = tasks[i].burst_time; // For Round Robin
+        tasks[i].remaining_burst = tasks[i].burst_time; 
         tasks[i].start_time = 0;
         tasks[i].completion_time = 0;
         tasks[i].waiting_time = 0;
         tasks[i].turnaround_time = 0;
     }
-
-    // Decide the scheduling algorithm based on task type
     if (strcmp(task_type, "emergency") == 0 || strcmp(task_type, "priority") == 0) {
         printf("\nUsing Priority Scheduling for all tasks:\n");
-        priority(tasks, n);  // For emergency or priority tasks, use Priority Scheduling
+        priority(tasks, n);
         calculate_metrics(tasks, n);
         display_gantt_chart(tasks, n);
     } else if (strcmp(task_type, "batch") == 0) {
         printf("\nUsing FCFS Scheduling for all tasks:\n");
-        fcfs(tasks, n);  // For batch tasks, use FCFS
+        fcfs(tasks, n);
         calculate_metrics(tasks, n);
         display_gantt_chart(tasks, n);
     } else if (strcmp(task_type, "real-time") == 0) {
         printf("\nUsing Round Robin Scheduling for all tasks:\n");
-        printf("Enter time quantum for Round Robin: ");
+        printf("Enter time quantum (in seconds): ");
         scanf("%d", &quantum);
-        round_robin(tasks, n, quantum);  // For real-time tasks, use Round Robin
+        round_robin(tasks, n, quantum);
     } else {
         printf("Invalid task type.\n");
     }
@@ -96,8 +120,6 @@ int main() {
     return 0;
 }
 
-
-// Sorting tasks by arrival time and priority (for Priority Scheduling)
 void sort_by_arrival_and_priority(Task tasks[], int n) {
     for (int i = 0; i < n - 1; i++) {
         for (int j = 0; j < n - i - 1; j++) {
@@ -111,7 +133,6 @@ void sort_by_arrival_and_priority(Task tasks[], int n) {
     }
 }
 
-// Sorting tasks by arrival time (for FCFS and Round Robin)
 void sort_by_arrival(Task tasks[], int n) {
     for (int i = 0; i < n - 1; i++) {
         for (int j = 0; j < n - i - 1; j++) {
@@ -124,7 +145,6 @@ void sort_by_arrival(Task tasks[], int n) {
     }
 }
 
-// Priority Scheduling Algorithm
 void priority(Task tasks[], int n) {
     sort_by_arrival_and_priority(tasks, n);
     int current_time = 0, completed = 0;
@@ -147,6 +167,7 @@ void priority(Task tasks[], int n) {
         }
 
         tasks[highest_priority].start_time = current_time;
+        run_process(&tasks[highest_priority]);  
         tasks[highest_priority].completion_time = current_time + tasks[highest_priority].burst_time;
         current_time = tasks[highest_priority].completion_time;
         visited[highest_priority] = true;
@@ -154,95 +175,71 @@ void priority(Task tasks[], int n) {
     }
 }
 
-// FCFS Scheduling Algorithm
 void fcfs(Task tasks[], int n) {
     sort_by_arrival(tasks, n);
     int current_time = 0;
 
     for (int i = 0; i < n; i++) {
-        // Task starts when it arrives or when the CPU is free
         if (tasks[i].arrival_time > current_time) {
-            current_time = tasks[i].arrival_time;  // CPU idle until the task arrives
+            current_time = tasks[i].arrival_time;
         }
-
         tasks[i].start_time = current_time;
+        run_process(&tasks[i]); 
         tasks[i].completion_time = current_time + tasks[i].burst_time;
         current_time = tasks[i].completion_time;
     }
 }
 
-// Round Robin Scheduling Algorithm
 void round_robin(Task tasks[], int n, int quantum) {
-    int time = 0;       // Current time
-    int completed = 0;  // Count of completed tasks
-    int i;
+    int time = 0, completed = 0;
 
-    // Initialize remaining_time for all tasks
-    for (i = 0; i < n; i++) {
+    for (int i = 0; i < n; i++) {
         tasks[i].remaining_time = tasks[i].burst_time;
     }
 
     printf("Gantt Chart:\n");
 
     while (completed < n) {
-        int executed = 0; // Flag to check if a task was executed in this cycle
-
-        for (i = 0; i < n; i++) {
+        int executed = 0;
+        for (int i = 0; i < n; i++) {
             if (tasks[i].remaining_time > 0) {
-                executed = 1; // Task is executed in this round
+                executed = 1;
                 printf("| T%d ", tasks[i].id);
 
                 if (tasks[i].remaining_time <= quantum) {
-                    // If remaining time is less than or equal to quantum
                     time += tasks[i].remaining_time;
                     tasks[i].remaining_time = 0;
+                    run_process(&tasks[i]);
                     completed++;
                     tasks[i].turnaround_time = time;
                     tasks[i].waiting_time = tasks[i].turnaround_time - tasks[i].burst_time;
                 } else {
-                    // If remaining time is greater than quantum
                     time += quantum;
                     tasks[i].remaining_time -= quantum;
+                    run_process(&tasks[i]);
                 }
             }
         }
-
-        if (!executed) break; // No tasks left to execute
+        if (!executed) break;
     }
 
-    printf("|\n");
-    printf("Final time: %d\n\n", time);
-
-    // Calculate and display AWT and ATAT
-    double total_waiting_time = 0, total_turnaround_time = 0;
-
-    printf("Task\tBurst Time\tWaiting Time\tTurnaround Time\n");
-    for (i = 0; i < n; i++) {
-        total_waiting_time += tasks[i].waiting_time;
-        total_turnaround_time += tasks[i].turnaround_time;
-        printf("T%d\t%d\t\t%d\t\t%d\n",
-               tasks[i].id, tasks[i].burst_time, tasks[i].waiting_time, tasks[i].turnaround_time);
-    }
-
-    printf("\nAverage Waiting Time: %.2f\n", total_waiting_time / n);
-    printf("Average Turnaround Time: %.2f\n", total_turnaround_time / n);
+    printf("|\nFinal time: %d\n\n", time);
 }
 
-
-
-// Metrics Calculation: Waiting and Turnaround Time
 void calculate_metrics(Task tasks[], int n) {
     float total_waiting_time = 0, total_turnaround_time = 0;
 
-    printf("\nTask Details (ID, Type, Arrival, Burst, Priority, Start, Completion, Waiting, Turnaround):\n");
+    printf("\nTask Details:\n");
+    printf("ID\tType\tArrival\tBurst\tPriority\tStart\tCompletion\tWaiting\tTurnaround\n");
+
     for (int i = 0; i < n; i++) {
         tasks[i].turnaround_time = tasks[i].completion_time - tasks[i].arrival_time;
-        tasks[i].waiting_time = tasks[i].start_time - tasks[i].arrival_time;  // Corrected waiting time calculation
+        tasks[i].waiting_time = tasks[i].start_time - tasks[i].arrival_time;
 
         total_waiting_time += tasks[i].waiting_time;
         total_turnaround_time += tasks[i].turnaround_time;
 
-        printf("T%d   %s   %d   %d   %d   %d   %d   %d   %d\n",
+        printf("T%d\t%s\t%d\t%d\t%d\t\t%d\t%d\t\t%d\t%d\n",
                tasks[i].id, tasks[i].type, tasks[i].arrival_time, tasks[i].burst_time,
                tasks[i].priority, tasks[i].start_time, tasks[i].completion_time,
                tasks[i].waiting_time, tasks[i].turnaround_time);
@@ -252,18 +249,12 @@ void calculate_metrics(Task tasks[], int n) {
     printf("Average Turnaround Time: %.2f\n", total_turnaround_time / n);
 }
 
-// Display Gantt Chart
 void display_gantt_chart(Task tasks[], int n) {
     printf("\nGantt Chart:\n");
-
-    // Print task IDs
     for (int i = 0; i < n; i++) {
         printf("|  T%d  ", tasks[i].id);
     }
-    printf("|\n");
-
-    // Print time intervals
-    printf("%d", tasks[0].start_time);
+    printf("|\n%d", tasks[0].start_time);
     for (int i = 0; i < n; i++) {
         printf("      %d", tasks[i].completion_time);
     }
